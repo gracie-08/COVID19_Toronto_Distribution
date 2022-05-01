@@ -1,0 +1,144 @@
+---
+title: "Reports of COVID-19 Cases in Toronto Vulnerable to Corrections Due To Fast-Paced Evolution of Data"
+author: "Yandrickx Dumalag"
+date: '2022-04-30'
+output: pdf_document
+
+abstract: "This paper investigates whether or not specific age groups, gender, or sources of infections disproportionately made up the case outcomes from the COVID-19 pandemic in the City of Toronto. This dataset was produced by Toronto Public Health as it extracted data from the Ontario province’s Case & Contact Management System. In a comparison between age groups and the outcomes of each reported COVID-19 case, gender did not show much disparity among the spectrum as it was reported. In comparing age groups and sources of infection, outcomes were generally resolved at the time of the report, with the older age groups experiencing more fatal and active COVID-19 cases. Overall, cases of COVID-19 have been contracted equally across the gender spectrum, though older age groups show more fatal and/or active cases than the younger population, evidently to health conditions and immunocompromised systems. This presents an implication that older age groups need to be more protected from sources of infections of the COVID-19 pandemic."
+---
+
+```{r setup, include=FALSE}
+install.packages("opendatatoronto")
+install.packages("lubridate")
+install.packages("knitr")
+install.packages("janitor")
+install.packages("tidyverse")
+install.packages("tidyr")
+install.packages("dplyr")
+
+library(knitr)
+library(janitor)
+library(lubridate)
+library(opendatatoronto)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+```
+
+# 1 Introduction
+
+The COVID-19 pandemic started early in 2020 and has been almost 2 years since the lockdown measures have been in place. Every week, Toronto Public Health reports numbers that contain general demographic information about individuals that contracted COVID-19. I was interested in seeing whether or not age or gender would be a factor in the clinical outcomes of the cases around COVID-19 and whether or not there would be disparity between groups. By taking a look at age groups, it would be interesting to see whether my assumptions would be supported about older age groups experiencing more fatal and active clinical case outcomes than the younger population as has been the popular assumption for a while. It would also be interesting to see if there are any disparities between genders, and taking a look at not just the heterosexual binary classification of male and female, but also non-binary and other gender identities reported in the dataset. Gender may play a role as physical mechanisms in the infection of Sars-CoV-2 might be different for genders, as well as behavioural differences between genders might affect how they are infected by the COVID-19 pandemic. By taking a look at the distribution of COVID-19 cases across age groups and gender, it would be a really good way to understand the City of Toronto’s population a little bit more and would be a good starting point in targeting the vaccination and immunization campaigns for those at more risk. 
+
+# 2 Data
+
+The data was obtained from Toronto Public Health and published by Open Data Toronto (Data, 2021). Toronto Public Health pulls data from Province of Ontario’s Case & Contact Management System, from which they obtain demographic information such as age group, gender identity, neighbourhood name, and other experiences with COVID-19. No other information was provided on the methodology in obtaining this dataset. As the COVID-19 pandemic is evolving, this dataset is always evolving and is subject to change based on public health investigations and quality improvement that is ongoing, so data is completely refreshed and overwritten every week to achieve this. 
+
+Upon accessing this dataset, some preparation was conducted before further analysis. Using R (R Core Team 2020), tidyverse (Wickham et al. 2019), and dplyr (Wickham et al. 2021), data was extracted and cleaned to focus on age groups, gender, sources of infection, and clinical case outcomes. 
+
+
+```{r covid_cases, echo = FALSE, warning = FALSE}
+covid_cases <- # what i want to name my data frame
+  list_package_resources("64b54586-6180-4485-83eb-81e8fae3b8fe") |> 
+  # the green code within the quotation is the ID for my data frame, can be found under "For Developers" section on OpenData webpage 
+  filter(row_number()==1) |> 
+  get_resource()
+
+write_csv(
+  x = covid_cases, # name of the data frame chosen above (line 19)
+  file = "covid_cases.csv"
+)
+
+# data cleanup #
+covid_cases_clean <- 
+  clean_names(covid_cases) |> 
+  select(age_group, source_of_infection, episode_date, reported_date, outcome,
+         client_gender) |>
+  drop_na(age_group)
+
+write_csv(
+  x = covid_cases_clean, 
+  file = "covid_cases_clean.csv"
+)
+
+covid_cases_clean <- 
+  read_csv(
+    "covid_cases_clean.csv",
+    show_col_types = FALSE
+  )
+
+```
+
+
+# 3 Results
+
+I chose to analyze the data surrounding COVID-19 cases in the City of Toronto. From this data, I wanted to see if there were any large disparities and impact between age groups and gender when it comes to the case outcomes of a COVID-19 case, and whether or not a source of infection was more common or showed more fatal or active cases in the city. 
+
+
+
+```{r graph1, echo=FALSE}
+
+covid_cases_clean |> 
+  ggplot(mapping = aes(x = outcome, y = age_group, fill = client_gender)) +
+  geom_bar(stat="identity", position = "dodge") +
+  labs(title = "Figure 1: COVID-19 Outcomes Based on Gender and Age", 
+       x = "Case Outcome", 
+       y = "Age Group",
+       fill = "Gender") +
+  theme_classic() +
+  scale_fill_brewer(palette = "Set1")
+
+```
+
+In Figure 1, COVID-19 case outcomes were identified based on age group and gender at the time the data was extracted. Active COVID-19 cases seem to have affected age groups 40-59 years old, without much difference between genders, although males are reportedly contracting the virus at an active stage for older age groups. Fatal COVID-19 cases were also reported, and almost all age groups are affected. Based on the graph, it seems that no one below 30 years old has been fatally affected. Age groups 30-39, 40-49, 50-59, 60-69, 70-79, 80-89, and 90 and older all had fatal case outcomes, with male and female-identifying genders present in the fatal cases equally. Aside from males and females, no other gender groups experienced fatal case outcomes at any age group. This is different with the resolved cases. Resolved cases were present for all age groups and almost all gender groups were also represented for each age group. From this figure, the data is representing no trends or disparity between gender, meaning that it is inconclusive in showing that COVID-19 is gender–sensitive. However, as evident in most literature, older age groups are more sensitive to active and fatal cases of COVID-19 due to weak immune systems making the elderly more vulnerable. 
+
+
+
+```{r table1, echo = FALSE}
+
+covid_cases_clean |> 
+  ggplot(mapping = aes(x = source_of_infection, y = age_group, fill = outcome)) +
+  geom_bar(stat="identity", position = "dodge") +
+  labs(title = "Figure 2: COVID-19 Outcomes Based on Gender and Age", 
+       x = "Source of Infection", 
+       y = "Age Group",
+       fill = "Outcome") +
+  theme_classic() +
+  scale_fill_brewer(palette = "Set1")
+
+```
+ 
+In Figure 2, COVID-19 case outcomes are compared by age groups and sources of infection. By taking a look at the graphs, it is evident that resolved cases are apparent for any source of infection, which is a good indication of recovery for those who have contracted COVID-19. On the two leftmost sets of bars, close contact and community source of infection seem to have active cases with the most recent data, while none of the other sources of infections currently have active cases. It seems that those who were infected from travelling seem like they have resolved their cases for all age groups; meanwhile, the rest of the sources of infection had some fatal cases, with the youngest age group being 30-39 years old. No younger age groups were fatally affected. The oldest age group of 90 and older were all fatally affected from sources of infection such as close contact, community, household contact, and outbreaks (in congregate settings, from healthcare institutions, or other settings) and again with travel having no fatal cases. 
+
+
+# 4 Discussion
+
+
+As evident in this analysis, the results show inconclusive evidence against the COVID-19 pandemic affecting certain gender more than others, though age groups still certainly experience disparity with older groups being more affected by the pandemic. 
+
+While it is the case that the data obtained from Toronto Public Health shows that all age groups had male and females experiencing active and fatal clinical outcomes, the data does not clearly show a number count for how many more males, females, or other gender groups experienced specific COVID-19 case outcomes. If done so, perhaps we could see possible gender disparity for how COVID-19 affects clinical outcomes. As found in Mukherjee and Pahan’s 2021 study, it is possible that COVID-19 is gender-sensitive due to the enzymes involved in the severity and fatality of Sars-CoV-2 virus as it is expressed by different genders. According to this study, though male and females are equally likely to be infected by COVID-19, males have a higher susceptibility in experiencing fatal and severe clinical outcomes. This may also be attributed to behaviours for each gender such as smoking and “prevalence to comorbidities” (Mukherjee and Pahan, 2021). On the other hand, Sobotka et al. (2020) found that COVID-19 infected working-age women severely outnumbered men with data taken from across 10 European countries. However, around retirement, the pattern reverses where more men outnumbered women in COVID-19 infections (Sobotka et al., 2020). It seems as though the literature is still inconclusive about the data around the gender sensitivity of COVID-19, which corroborate the results found in this paper. 
+
+When it comes to morbidity from a pandemic, it is important to also look into age distribution and how age groups are affected. As found in the results of this paper, age groups above 30 years old all experienced some fatal clinical outcomes from COVID-19. For most sources of infection, anyone above 30 years old had experienced fatal outcomes from all sources identified above, except for travelling. This is supported by a number of articles from the literature. According to Cortis (2020), specifically for COVID-19, elderly individuals tend to have higher morbidity and mortality rates than the rest of the population. This is unlike most pandemics, which puts the elderly population at a higher risk. However, according to an article by Christie et al. (2021), places with really strong vaccine coverage effectively reduced COVID-19 cases and severe illness for the population that had participated in vaccination campaigns. 
+
+Overall, this analysis was able to visualize how age and gender might have an effect on the clinical outcomes of the COVID-19 pandemic. Though there was not much disparity observed between genders, it is evident that the older population remains at risk for severe and fatal COVID-19 outcomes and this part of the population must be protected with vaccination programs and social distancing practices. To further strengthen this paper, next steps would be to better visualize the specific data on the amount of males, females, and other genders that experienced specific clinical outcomes. It would also help to visualize where these data are coming from in the City of Toronto, and if available, possible behavioral reasons why specific genders would be infected more than others. 
+
+
+\pagebreak
+
+
+# References
+
+Cortis, D. (2020). On determining the age distribution of COVID-19 pandemic. Frontiers in public health, 8, 202.
+
+Christie, A., Henley, S. J., Mattocks, L., Fernando, R., Lansky, A., Ahmad, F. B., ... & Beach, M. J. (2021). Decreases in COVID-19 cases, emergency department visits, hospital admissions, and deaths among older adults following the introduction of COVID-19 vaccine—United States, September 6, 2020–May 1, 2021. Morbidity and Mortality Weekly Report, 70(23), 858.
+
+Data, Toronto Open. 2021. “COVID-19 Cases in Toronto.” https://open.toronto.ca/dataset/covid-19-cases-in-toronto/
+
+Mukherjee, S., & Pahan, K. (2021). Is COVID-19 gender-sensitive?. Journal of Neuroimmune Pharmacology, 16(1), 38-47.
+
+Sobotka, T., Brzozowska, Z., Muttarak, R., Zeman, K., & Di Lego, V. (2020). Age, gender and COVID-19 infections. MedRxiv.
+
+R Core Team. 2020. R: A Language and Environment for Statistical Computing. Vienna, Austria: R Foundation for Statistical Computing. https://www.R-project.org/.
+
+Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy D’Agostino McGowan, Romain François, Garrett Grolemund, et al. 2019. “Welcome to the tidyverse.” Journal of Open Source Software 4 (43): 1686. https://doi.org/10.21105/joss.01686.
+
+Wickham, Hadley, Romain François, Lionel Henry, and Kirill Müller. 2021. Dplyr: A Grammar of Data Manipulation. https://CRAN.R-project.org/package=dplyr.
